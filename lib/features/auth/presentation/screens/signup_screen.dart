@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/auth_provider.dart';
+import '../widgets/auth_button.dart';
+import '../widgets/auth_textfield.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -12,116 +15,115 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
   @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _submit(AuthProvider authProvider) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    await authProvider.signup(
+      emailController.text.trim(),
+      passwordController.text.trim(),
+    );
+
+    if (!context.mounted) return;
+
+    if (authProvider.error == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HomeScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.error!),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xff0F2027), Color(0xff203A43), Color(0xff2C5364)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Form(
+            key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 60),
+
                 const Text(
                   "Create Account 🚀",
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
                   ),
                 ),
+
                 const SizedBox(height: 10),
+
                 const Text(
                   "Join us and get started!",
-                  style: TextStyle(
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(color: Colors.black54),
                 ),
+
                 const SizedBox(height: 40),
-                _buildTextField(
+
+                /// Email
+                AuthTextField(
                   controller: emailController,
-                  hint: "Email",
-                  icon: Icons.email,
+                  label: 'Email',
+                  keyboardType: TextInputType.emailAddress,
                 ),
+
                 const SizedBox(height: 20),
-                _buildTextField(
+
+                /// Password
+                AuthTextField(
                   controller: passwordController,
-                  hint: "Password",
-                  icon: Icons.lock,
-                  isPassword: true,
+                  label: 'Password',
+                  obscureText: true,
                 ),
+
                 const SizedBox(height: 20),
-                _buildTextField(
+
+                /// Confirm Password
+                AuthTextField(
                   controller: confirmPasswordController,
-                  hint: "Confirm Password",
-                  icon: Icons.lock_outline,
-                  isPassword: true,
+                  label: 'Confirm Password',
+                  obscureText: true,
                 ),
+
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyanAccent,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    onPressed: authProvider.isLoading
-                        ? null
-                        : () async {
-                            if (passwordController.text !=
-                                confirmPasswordController.text) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Passwords do not match"),
-                                ),
-                              );
-                              return;
-                            }
 
-                            await authProvider.signup(
-                              emailController.text.trim(),
-                              passwordController.text.trim(),
-                            );
-
-                            if (authProvider.error == null && context.mounted) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const HomeScreen(),
-                                ),
-                              );
-                            }
-                          },
-                    child: authProvider.isLoading
-                        ? const CircularProgressIndicator()
-                        : const Text(
-                            "SIGN UP",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
+                /// Signup Button
+                AuthButton(
+                  text: 'SIGN UP',
+                  isLoading: authProvider.isLoading,
+                  onPressed: () => _submit(authProvider),
                 ),
+
                 const SizedBox(height: 20),
+
+                /// Navigate to Login
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
@@ -131,39 +133,18 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     );
                   },
-                  child: const Text(
+                  child: Text(
                     "Already have an account? Login",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                 ),
+
                 const SizedBox(height: 40),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.white70),
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white60),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide.none,
         ),
       ),
     );

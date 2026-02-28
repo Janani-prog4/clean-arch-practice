@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/signup_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
@@ -16,9 +17,11 @@ class AuthProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _error;
+  UserEntity? _user;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
+  UserEntity? get user => _user;
 
   Future<void> login(String email, String password) async {
     try {
@@ -26,7 +29,7 @@ class AuthProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      await loginUseCase(email, password);
+      _user = await loginUseCase(email, password);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -41,7 +44,7 @@ class AuthProvider extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      await signUpUseCase(email, password);
+      _user = await signUpUseCase(email, password);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -52,5 +55,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await logoutUseCase();
+    _user = null;
+    notifyListeners();
   }
 }
