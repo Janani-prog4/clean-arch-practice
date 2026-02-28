@@ -32,18 +32,15 @@ class MyApp extends StatelessWidget {
     final remoteDataSource = AuthRemoteDataSourceImpl(firebaseAuth);
     final repository = AuthRepositoryImpl(remoteDataSource);
 
-    // create use cases once so we can reuse them
     final loginUseCase = LoginUseCase(repository);
     final signUpUseCase = SignUpUseCase(repository);
     final logoutUseCase = LogoutUseCase(repository);
 
     return MultiProvider(
       providers: [
-        // keep providers in case other parts of the app need them
         Provider.value(value: loginUseCase),
         Provider.value(value: signUpUseCase),
         Provider.value(value: logoutUseCase),
-
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider(
             loginUseCase: loginUseCase,
@@ -60,7 +57,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// 🔥 Auto Login Wrapper
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
